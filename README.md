@@ -93,15 +93,6 @@ agriPulse/
 - Access to customer-specific dashboard
 - Future features: Browse products, place orders
 
-## Next Development Steps
-
-1. Add product management for farmers
-2. Implement shopping cart for customers
-3. Add order processing system
-4. Implement search and filtering
-5. Add payment integration
-6. Add user profiles and settings
-
 ## Technologies Used
 
 - **Frontend**: React, CSS3, Axios
