@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 
@@ -175,6 +176,77 @@ app.delete('/products/:productId', (req, res) => {
     }
     res.status(200).json({ message: 'Product deleted successfully' });
   });
+});
+
+// Crop disease prediction endpoint
+app.post('/predict-disease', async (req, res) => {
+  console.log('🔍 Disease prediction request received');
+  
+  try {
+    const { image } = req.body;
+    
+    if (!image) {
+      console.log('❌ No image data provided');
+      return res.status(400).json({ message: 'Image data is required' });
+    }
+
+    console.log('📡 Forwarding request to ML service...');
+    
+    // Forward the request to ML service
+    const mlResponse = await axios.post('http://localhost:5001/predict', {
+      image: image
+    }, {
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ ML service responded successfully');
+    res.status(200).json(mlResponse.data);
+    
+  } catch (error) {
+    console.error('❌ ML Service error:', error.message);
+    console.error('Error details:', {
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(503).json({ 
+        message: 'ML service is not available. Please ensure the ML service is running on port 5001.' 
+      });
+    }
+    
+    if (error.response) {
+      return res.status(error.response.status).json({ 
+        message: error.response.data.error || 'ML service error' 
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error processing disease prediction: ' + error.message 
+    });
+  }
+});
+
+// ML service health check endpoint
+app.get('/ml-health', async (req, res) => {
+  try {
+    const mlResponse = await axios.get('http://localhost:5001/health', {
+      timeout: 5000
+    });
+    res.status(200).json({
+      status: 'ML service is healthy',
+      mlServiceData: mlResponse.data
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ML service is not available',
+      error: error.message
+    });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
